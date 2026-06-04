@@ -1,6 +1,9 @@
 {
   "name": "mortgage-life-insurance",
   "version": "1.0.0",
+  "description": "QuoteFlow – AI-powered mortgage life insurance agent portal",
+  "author": "jridgel",
+  "license": "MIT",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",

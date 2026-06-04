@@ -13,6 +13,19 @@ const initialState = {
   message: '',
 };
 
+function formatPhone(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 10);
+  if (digits.length < 4) return digits;
+  if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+function formatDollars(value) {
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return '';
+  return Number(digits).toLocaleString();
+}
+
 function validate(form) {
   const errors = {};
   if (!form.firstName.trim()) errors.firstName = 'First name is required.';
@@ -32,14 +45,16 @@ function validate(form) {
   } else if (Number(form.age) < 18 || Number(form.age) > 80) {
     errors.age = 'Age must be between 18 and 80.';
   }
+  const loanRaw = Number(form.loanAmount.toString().replace(/,/g, ''));
   if (!form.loanAmount) {
     errors.loanAmount = 'Loan amount is required.';
-  } else if (Number(form.loanAmount) < 50000) {
+  } else if (loanRaw < 50000) {
     errors.loanAmount = 'Minimum loan amount is $50,000.';
   }
+  const coverageRaw = Number(form.coverageAmount.toString().replace(/,/g, ''));
   if (!form.coverageAmount) {
     errors.coverageAmount = 'Coverage amount is required.';
-  } else if (Number(form.coverageAmount) < 50000) {
+  } else if (coverageRaw < 50000) {
     errors.coverageAmount = 'Minimum coverage amount is $50,000.';
   }
   return errors;
@@ -54,9 +69,15 @@ export default function QuoteForm() {
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    let formatted = value;
+    if (name === 'phone') formatted = formatPhone(value);
+    if (name === 'loanAmount' || name === 'coverageAmount') formatted = formatDollars(value);
+    setForm((f) => ({ ...f, [name]: formatted }));
     if (touched[name]) {
-      setFieldErrors((prev) => ({ ...prev, [name]: validate({ ...form, [name]: value })[name] }));
+      const rawValue = (name === 'loanAmount' || name === 'coverageAmount')
+        ? formatted.replace(/,/g, '')
+        : formatted;
+      setFieldErrors((prev) => ({ ...prev, [name]: validate({ ...form, [name]: rawValue })[name] }));
     }
   }
 
@@ -77,7 +98,12 @@ export default function QuoteForm() {
     setStatus('loading');
     setErrorMsg('');
     try {
-      await axios.post('/api/leads', form);
+      const payload = {
+        ...form,
+        loanAmount: form.loanAmount.replace(/,/g, ''),
+        coverageAmount: form.coverageAmount.replace(/,/g, ''),
+      };
+      await axios.post('/api/leads', payload);
       setStatus('success');
       setForm(initialState);
       setFieldErrors({});
@@ -126,8 +152,8 @@ export default function QuoteForm() {
                   <option value="yes">Yes</option>
                 </select>
               </div>
-              <Field label="Mortgage Loan Amount *" name="loanAmount" type="number" value={form.loanAmount} onChange={handleChange} onBlur={handleBlur} placeholder="350000" min="50000" prefix="$" error={fieldErrors.loanAmount} />
-              <Field label="Desired Coverage Amount *" name="coverageAmount" type="number" value={form.coverageAmount} onChange={handleChange} onBlur={handleBlur} placeholder="350000" min="50000" prefix="$" error={fieldErrors.coverageAmount} />
+              <Field label="Mortgage Loan Amount *" name="loanAmount" type="text" value={form.loanAmount} onChange={handleChange} onBlur={handleBlur} placeholder="350,000" prefix="$" error={fieldErrors.loanAmount} />
+              <Field label="Desired Coverage Amount *" name="coverageAmount" type="text" value={form.coverageAmount} onChange={handleChange} onBlur={handleBlur} placeholder="350,000" prefix="$" error={fieldErrors.coverageAmount} />
             </div>
 
             <div className="mt-6">

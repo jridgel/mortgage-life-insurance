@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuoteFlow – Agent Portal</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #1a3a5c;
+      --navy-dark: #112944;
+      --blue: #2a7fd4;
+      --blue-light: #4db6f5;
+      --green: #1ca06a;
+      --red: #d94040;
+      --gray-bg: #f0f4f8;
+      --gray-border: #ccd6e0;
+      --gray-text: #555;
+      --sidebar-w: 220px;
+    }
+
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--gray-bg); color: #333; min-height: 100vh; }
+
+    /* ══════════════ SHARED NAV ══════════════ */
+    .top-nav {
+      background: var(--navy);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      height: 58px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+    .nav-logo { font-size: 1.35rem; font-weight: 800; color: #fff; text-decoration: none; letter-spacing: 0.3px; }
+    .nav-logo span { color: var(--blue-light); }
+    .nav-links { display: flex; align-items: center; gap: 2px; list-style: none; }
+    .nav-links a { color: #cde4f7; text-decoration: none; padding: 6px 13px; border-radius: 4px; font-size: 0.87rem; transition: background .15s, color .15s; }
+    .nav-links a:hover { background: rgba(255,255,255,.12); color: #fff; }
+
+    .dropdown { position: relative; }
+    .dropdown > a::after { content: ' ▾'; font-size: .7rem; }
+    .dropdown-menu { display: none; position: absolute; top: calc(100% + 6px); right: 0; background: #fff; border: 1px solid #dde4ec; border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.12); min-width: 210px; overflow: hidden; }
+    .dropdown:hover .dropdown-menu, .dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-menu a { display: block; color: var(--navy); padding: 10px 16px; font-size: .85rem; border-bottom: 1px solid #f0f4f8; transition: background .12s; }
+    .dropdown-menu a:last-child { border-bottom: none; }
+    .dropdown-menu a:hover { background: #eef4fb; }
+    .dropdown-phone { padding: 10px 16px; font-size: .82rem; color: #666; border-bottom: 1px solid #f0f4f8; font-weight: 600; }
+
+    .nav-user { display: none; align-items: center; gap: 10px; font-size: .85rem; color: #cde4f7; }
+    .nav-user .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--blue); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .8rem; color: #fff; }
+    .nav-user .btn-logout { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); color: #fff; font-size: .78rem; padding: 4px 10px; border-radius: 4px; cursor: pointer; transition: background .15s; }
+    .nav-user .btn-logout:hover { background: rgba(255,255,255,.22); }
+
+    /* ══════════════ LOGIN PAGE ══════════════ */
+    #page-login { display: flex; flex-direction: column; min-height: 100vh; }
+    #page-login main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 48px 16px; }
+
+    .card { background: #fff; border-radius: 10px; box-shadow: 0 4px 24px rgba(0,0,0,.09); padding: 44px 48px; width: 100%; max-width: 420px; }
+    .card-logo { text-align: center; margin-bottom: 28px; }
+    .card-logo .logo-text { font-size: 2rem; font-weight: 800; color: var(--navy); }
+    .card-logo .logo-text span { color: var(--blue-light); }
+    .card-logo p { font-size: .83rem; color: #888; margin-top: 4px; }
+    .card h2 { font-size: 1.1rem; font-weight: 600; color: var(--navy); margin-bottom: 22px; text-align: center; }
+
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: .82rem; font-weight: 600; color: var(--gray-text); margin-bottom: 5px; }
+    input[type=text], input[type=email], input[type=password], input[type=number], input[type=tel], select, textarea {
+      width: 100%; padding: 9px 12px; border: 1px solid var(--gray-border); border-radius: 5px; font-size: .93rem; outline: none; transition: border-color .15s, box-shadow .15s; color: #333; background: #fff;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--blue-light); box-shadow: 0 0 0 3px rgba(77,182,245,.15); }
+
+    .form-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+    .remember-me { display: flex; align-items: center; gap: 7px; font-size: .84rem; color: var(--gray-text); cursor: pointer; user-select: none; }
+    .remember-me input { width: auto; }
+    .forgot-link { font-size: .83rem; color: var(--blue); text-decoration: none; }
+    .forgot-link:hover { text-decoration: underline; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 20px; border: none; border-radius: 5px; font-size: .92rem; font-weight: 600; cursor: pointer; transition: background .15s, opacity .15s; }
+    .btn-primary { background: var(--navy); color: #fff; }
+    .btn-primary:hover { background: var(--navy-dark); }
+    .btn-primary:disabled { opacity: .55; cursor: default; }
+    .btn-blue { background: var(--blue); color: #fff; }
+    .btn-blue:hover { background: #2270c0; }
+    .btn-green { background: var(--green); color: #fff; }
+    .btn-green:hover { background: #178a5b; }
+    .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--navy); }
+    .btn-outline:hover { background: var(--navy); color: #fff; }
+    .btn-sm { padding: 6px 14px; font-size: .82rem; }
+    .btn-full { width: 100%; }
+    .btn-copy { background: #eef4fb; color: var(--navy); border: 1px solid #ccd6e0; padding: 6px 12px; font-size: .8rem; border-radius: 4px; cursor: pointer; transition: background .15s; }
+    .btn-copy:hover { background: #dde8f5; }
+
+    .divider { border: none; border-top: 1px solid #eee; margin: 22px 0; }
+    .get-started { text-align: center; font-size: .86rem; color: #777; }
+    .get-started a { color: var(--blue); text-decoration: none; font-weight: 600; }
+    .get-started a:hover { text-decoration: underline; }
+    .login-error { background: #fff0f0; border: 1px solid #f5c0c0; color: var(--red); border-radius: 5px; padding: 9px 12px; font-size: .85rem; margin-bottom: 14px; display: none; }
+
+    footer { text-align: center; padding: 16px; font-size: .78rem; color: #aaa; background: #fff; border-top: 1px solid #e8edf2; }
+
+    /* ══════════════ PORTAL LAYOUT ══════════════ */
+    #page-portal { display: none; }
+
+    .portal-layout { display: flex; min-height: calc(100vh - 58px); }
+
+    /* Sidebar */
+    .sidebar { width: var(--sidebar-w); background: var(--navy-dark); color: #fff; flex-shrink: 0; padding: 20px 0; display: flex; flex-direction: column; }
+    .sidebar-section { font-size: .68rem; letter-spacing: 1px; text-transform: uppercase; color: #7aa0c0; padding: 16px 20px 6px; font-weight: 600; }
+    .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #b8d0e8; font-size: .88rem; cursor: pointer; transition: background .12s, color .12s; border-left: 3px solid transparent; }
+    .sidebar-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+    .sidebar-item.active { background: rgba(77,182,245,.15); color: #4db6f5; border-left-color: #4db6f5; }
+    .sidebar-icon { font-size: 1rem; width: 20px; text-align: center; }
+    .sidebar-bottom { margin-top: auto; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.08); font-size: .8rem; color: #7aa0c0; }
+
+    /* Main content */
+    .portal-main { flex: 1; overflow-x: hidden; }
+    .portal-tab { display: none; padding: 28px 32px; }
+    .portal-tab.active { display: block; }
+
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { font-size: 1.45rem; font-weight: 700; color: var(--navy); }
+    .page-header p { font-size: .88rem; color: #777; margin-top: 4px; }
+
+    /* ══════════════ STATS CARDS ══════════════ */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .stat-card { background: #fff; border-radius: 8px; padding: 18px 20px; box-shadow: 0 1px 8px rgba(0,0,0,.06); }
+    .stat-card .stat-label { font-size: .78rem; color: #888; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+    .stat-card .stat-value { font-size: 1.7rem; font-weight: 800; color: var(--navy); margin: 4px 0 2px; }
+    .stat-card .stat-sub { font-size: .77rem; color: var(--green); font-weight: 600; }
+
+    /* ══════════════ QUOTING ENGINE ══════════════ */
+    .quote-grid { display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start; }
+    @media (max-width: 900px) { .quote-grid { grid-template-columns: 1fr; } }
+
+    .quote-panel { background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 24px; }
+    .quote-panel h3 { font-size: 1rem; font-weight: 700; color: var(--navy); margin-bottom: 18px; padding-bottom: 10px; border-bottom: 2px solid var(--gray-bg); }
+
+    .form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group-sm { margin-bottom: 12px; }
+    .form-group-sm label { font-size: .78rem; }
+    .field-prefix-wrap { position: relative; }
+    .field-prefix { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #888; font-weight: 600; pointer-events: none; }
+    .field-prefix + input { padding-left: 22px; }
+
+    /* Results table */
+    .results-panel { background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.07); overflow: hidden; }
+    .results-header { padding: 16px 20px; border-bottom: 1px solid #eef2f7; display: flex; align-items: center; justify-content: space-between; }
+    .results-header h3 { font-size: 1rem; font-weight: 700; color: var(--navy); }
+    .results-badge { font-size: .75rem; background: #eef4fb; color: var(--blue); border-radius: 20px; padding: 3px 10px; font-weight: 600; }
+
+    .results-empty { padding: 60px 20px; text-align: center; color: #bbb; }
+    .results-empty .icon { font-size: 3rem; margin-bottom: 12px; }
+    .results-empty p { font-size: .9rem; }
+
+    .carrier-table { width: 100%; border-collapse: collapse; }
+    .carrier-table th { background: #f5f8fc; color: #888; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 10px 14px; text-align: left; border-bottom: 1px solid #eef2f7; }
+    .carrier-table td { padding: 12px 14px; border-bottom: 1px solid #f0f4f8; font-size: .88rem; vertical-align: middle; }
+    .carrier-table tr:last-child td { border-bottom: none; }
+    .carrier-table tr:hover td { background: #fafcff; }
+    .carrier-row-best td:first-child { border-left: 3px solid var(--green); }
+
+    .carrier-name { font-weight: 600; color: var(--navy); }
+    .carrier-rating { font-size: .75rem; color: #888; }
+    .carrier-am { display: inline-block; background: #f0faf5; color: var(--green); font-size: .72rem; font-weight: 700; padding: 2px 6px; border-radius: 3px; margin-left: 6px; }
+    .price-monthly { font-size: 1.1rem; font-weight: 800; color: var(--navy); }
+    .price-annual { font-size: .77rem; color: #888; }
+    .badge-best { display: inline-block; background: var(--green); color: #fff; font-size: .68rem; font-weight: 700; padding: 2px 7px; border-radius: 3px; text-transform: uppercase; letter-spacing: .3px; }
+    .badge-popular { display: inline-block; background: #e8f0fb; color: var(--blue); font-size: .68rem; font-weight: 700; padding: 2px 7px; border-radius: 3px; text-transform: uppercase; letter-spacing: .3px; }
+
+    .quote-summary-bar { background: linear-gradient(135deg, var(--navy-dark), var(--navy)); color: #fff; padding: 14px 20px; font-size: .83rem; display: none; }
+    .quote-summary-bar span { margin-right: 20px; }
+    .quote-summary-bar strong { color: var(--blue-light); }
+
+    /* ══════════════ WEB PLUGIN ══════════════ */
+    .plugin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+    @media (max-width: 960px) { .plugin-grid { grid-template-columns: 1fr; } }
+
+    .plugin-config { background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 24px; }
+    .plugin-config h3 { font-size: 1rem; font-weight: 700; color: var(--navy); margin-bottom: 18px; padding-bottom: 10px; border-bottom: 2px solid var(--gray-bg); }
+
+    .color-row { display: flex; align-items: center; gap: 10px; }
+    .color-row input[type=color] { width: 40px; height: 36px; padding: 2px; border: 1px solid var(--gray-border); border-radius: 5px; cursor: pointer; }
+    .color-row input[type=text] { flex: 1; }
+
+    .code-block { background: #0f1e30; color: #a8d8ff; font-family: 'Courier New', monospace; font-size: .78rem; padding: 16px; border-radius: 6px; overflow-x: auto; white-space: pre; line-height: 1.6; position: relative; }
+    .code-block .code-copy { position: absolute; top: 10px; right: 10px; }
+
+    .plugin-preview-wrap { background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.07); overflow: hidden; }
+    .plugin-preview-wrap h3 { font-size: 1rem; font-weight: 700; color: var(--navy); padding: 16px 20px; border-bottom: 1px solid #eef2f7; }
+    .preview-frame-wrap { padding: 20px; background: #f7f9fc; }
+    .preview-frame-wrap .frame-label { font-size: .75rem; color: #888; text-align: center; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* The embeddable widget styles (also used in preview) */
+    .qf-widget { font-family: 'Segoe UI', Arial, sans-serif; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,.12); max-width: 420px; width: 100%; }
+    .qf-widget-header { padding: 18px 20px; }
+    .qf-widget-header h4 { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 2px; }
+    .qf-widget-header p { font-size: .8rem; color: rgba(255,255,255,.8); }
+    .qf-widget-body { background: #fff; padding: 20px; }
+    .qf-field { margin-bottom: 12px; }
+    .qf-field label { display: block; font-size: .75rem; font-weight: 600; color: #666; margin-bottom: 4px; }
+    .qf-field input, .qf-field select { width: 100%; padding: 8px 10px; border: 1px solid #dde4ec; border-radius: 5px; font-size: .88rem; outline: none; }
+    .qf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .qf-btn { width: 100%; padding: 11px; border: none; border-radius: 5px; font-size: .92rem; font-weight: 700; color: #fff; cursor: pointer; margin-top: 4px; }
+    .qf-footer { background: #f7f9fc; padding: 8px 16px; font-size: .7rem; color: #aaa; text-align: center; border-top: 1px solid #eee; }
+
+    /* Embed options tabs */
+    .embed-tabs { display: flex; gap: 0; border-bottom: 2px solid #eee; margin-bottom: 16px; }
+    .embed-tab { padding: 8px 16px; font-size: .83rem; font-weight: 600; cursor: pointer; color: #888; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color .15s; }
+    .embed-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    /* ══════════════ LEADS TAB ══════════════ */
+    .leads-table-wrap { background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.07); overflow: hidden; }
+    .leads-toolbar { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eef2f7; gap: 12px; flex-wrap: wrap; }
+    .leads-toolbar input { padding: 7px 12px; border: 1px solid var(--gray-border); border-radius: 5px; font-size: .85rem; outline: none; width: 220px; }
+    .leads-toolbar input:focus { border-color: var(--blue-light); }
+    .leads-table { width: 100%; border-collapse: collapse; }
+    .leads-table th { background: #f5f8fc; color: #888; font-size: .73rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 10px 14px; text-align: left; border-bottom: 1px solid #eef2f7; white-space: nowrap; }
+    .leads-table td { padding: 11px 14px; border-bottom: 1px solid #f0f4f8; font-size: .86rem; }
+    .leads-table tr:last-child td { border-bottom: none; }
+    .leads-table tr:hover td { background: #fafcff; }
+    .status-pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: .72rem; font-weight: 700; }
+    .status-new { background: #e8f3ff; color: #2a7fd4; }
+    .status-contacted { background: #fff8e0; color: #b07a00; }
+    .status-quoted { background: #edfaf4; color: #1ca06a; }
+    .status-closed { background: #f5e8ff; color: #7a3fb5; }
+
+    /* ══════════════ ALERTS / TOASTS ══════════════ */
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #222; color: #fff; padding: 12px 18px; border-radius: 7px; font-size: .86rem; z-index: 9999; opacity: 0; transform: translateY(10px); transition: opacity .25s, transform .25s; pointer-events: none; }
+    .toast.show { opacity: 1; transform: none; }
+
+    @media (max-width: 700px) {
+      .card { padding: 28px 20px; }
+      .portal-tab { padding: 18px 16px; }
+      .form-2col { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     TOP NAV (shared)
+════════════════════════════════════════ -->
+<nav class="top-nav">
+  <a href="#" class="nav-logo">Quote<span>Flow</span></a>
+  <ul class="nav-links" id="public-nav">
+    <li><a href="#">Home</a></li>
+    <li><a href="#">FAQ</a></li>
+    <li><a href="#">Demo</a></li>
+    <li><a href="#">Get Started</a></li>
+    <li class="dropdown">
+      <a href="#" onclick="return false;">Support</a>
+      <div class="dropdown-menu">
+        <div class="dropdown-phone">📞 (800) 555-0199</div>
+        <a href="#">Submit a Support Ticket</a>
+        <a href="#">Knowledge Base</a>
+        <a href="#">FAQ</a>
+      </div>
+    </li>
+  </ul>
+  <div class="nav-user" id="portal-nav-user">
+    <div class="avatar" id="nav-avatar">JD</div>
+    <span id="nav-name">Jane Doe</span>
+    <button class="btn-logout" onclick="logout()">Log Out</button>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════
+     LOGIN PAGE
+════════════════════════════════════════ -->
+<div id="page-login">
+  <main>
+    <div class="card">
+      <div class="card-logo">
+        <div class="logo-text">Quote<span>Flow</span></div>
+        <p>Agent &amp; Client Portal</p>
+      </div>
+      <h2>Sign In to Your Account</h2>
+      <div class="login-error" id="login-error">Invalid username or password. Please try again.</div>
+      <form onsubmit="doLogin(event)">
+        <div class="form-group">
+          <label for="username">Username / Email</label>
+          <input type="email" id="username" placeholder="you@example.com" autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required />
+        </div>
+        <div class="form-row">
+          <label class="remember-me"><input type="checkbox" /> Remember me</label>
+          <a href="#" class="forgot-link">Forgot Password?</a>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" style="padding:11px">Login Here</button>
+      </form>
+      <hr class="divider" />
+      <p class="get-started">Don't have an account? <a href="#">Get Started</a></p>
+    </div>
+  </main>
+  <footer>&copy; 2026 QuoteFlow. All rights reserved.</footer>
+</div>
+
+<!-- ════════════════════════════════════════
+     AGENT PORTAL
+════════════════════════════════════════ -->
+<div id="page-portal">
+  <div class="portal-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section">Main</div>
+      <div class="sidebar-item active" onclick="showTab('dashboard', this)">
+        <span class="sidebar-icon">🏠</span> Dashboard
+      </div>
+      <div class="sidebar-item" onclick="showTab('quoting', this)">
+        <span class="sidebar-icon">💲</span> Quoting Engine
+      </div>
+      <div class="sidebar-item" onclick="showTab('plugin', this)">
+        <span class="sidebar-icon">🔌</span> Web Quote Plugin
+      </div>
+      <div class="sidebar-section">Clients</div>
+      <div class="sidebar-item" onclick="showTab('leads', this)">
+        <span class="sidebar-icon">👥</span> Leads &amp; Clients
+      </div>
+      <div class="sidebar-item" onclick="showTab('policies', this)">
+        <span class="sidebar-icon">📋</span> Policies
+      </div>
+      <div class="sidebar-section">Account</div>
+      <div class="sidebar-item" onclick="showTab('settings', this)">
+        <span class="sidebar-icon">⚙️</span> Settings
+      </div>
+      <div class="sidebar-bottom">QuoteFlow v2.4.1</div>
+    </aside>
+
+    <!-- Content -->
+    <div class="portal-main">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="portal-tab active" id="tab-dashboard">
+        <div class="page-header">
+          <h1>Welcome back, <span id="dash-name">Agent</span> 👋</h1>
+          <p>Here's a snapshot of your activity this month.</p>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Quotes Run</div>
+            <div class="stat-value">47</div>
+            <div class="stat-sub">↑ 12% vs last month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">New Leads</div>
+            <div class="stat-value">18</div>
+            <div class="stat-sub">↑ 3 from plugin widget</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Policies Issued</div>
+            <div class="stat-value">9</div>
+            <div class="stat-sub">↑ 2 this week</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Est. Commission</div>
+            <div class="stat-value">$6,240</div>
+            <div class="stat-sub">Month to date</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div class="quote-panel">
+            <h3>Quick Actions</h3>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <button class="btn btn-primary" onclick="showTab('quoting', document.querySelector('[onclick*=quoting]'))">💲 Run a New Quote</button>
+              <button class="btn btn-blue" onclick="showTab('leads', document.querySelector('[onclick*=leads]'))">👥 View Leads</button>
+              <button class="btn btn-outline" onclick="showTab('plugin', document.querySelector('[onclick*=plugin]'))">🔌 Get Embed Code</button>
+            </div>
+          </div>
+          <div class="quote-panel">
+            <h3>Recent Quotes</h3>
+            <div style="font-size:.86rem;color:#555">
+              <div style="padding:8px 0;border-bottom:1px solid #f0f4f8;display:flex;justify-content:space-between"><span>Mark T. – $500K / 20yr</span><span style="color:var(--green);font-weight:600">$42/mo</span></div>
+              <div style="padding:8px 0;border-bottom:1px solid #f0f4f8;display:flex;justify-content:space-between"><span>Sarah L. – $300K / 30yr</span><span style="color:var(--green);font-weight:600">$38/mo</span></div>
+              <div style="padding:8px 0;border-bottom:1px solid #f0f4f8;display:flex;justify-content:space-between"><span>David R. – $750K / 15yr</span><span style="color:var(--green);font-weight:600">$68/mo</span></div>
+              <div style="padding:8px 0;display:flex;justify-content:space-between"><span>Lisa M. – $400K / 20yr</span><span style="color:var(--green);font-weight:600">$51/mo</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── QUOTING ENGINE ── -->
+      <div class="portal-tab" id="tab-quoting">
+        <div class="page-header">
+          <h1>Quoting Engine</h1>
+          <p>Enter client details to compare real-time rates across top-rated carriers.</p>
+        </div>
+        <div class="quote-grid">
+          <!-- Input form -->
+          <div class="quote-panel">
+            <h3>Client Information</h3>
+            <form onsubmit="runQuote(event)" id="quote-form">
+              <div class="form-2col">
+                <div class="form-group-sm">
+                  <label>First Name</label>
+                  <input type="text" id="q-first" placeholder="Jane" required />
+                </div>
+                <div class="form-group-sm">
+                  <label>Last Name</label>
+                  <input type="text" id="q-last" placeholder="Smith" required />
+                </div>
+              </div>
+              <div class="form-2col">
+                <div class="form-group-sm">
+                  <label>Age</label>
+                  <input type="number" id="q-age" placeholder="35" min="18" max="80" required />
+                </div>
+                <div class="form-group-sm">
+                  <label>Gender</label>
+                  <select id="q-gender">
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group-sm">
+                <label>Coverage Amount</label>
+                <div class="field-prefix-wrap">
+                  <span class="field-prefix">$</span>
+                  <input type="number" id="q-coverage" placeholder="500000" min="50000" step="50000" required />
+                </div>
+              </div>
+              <div class="form-group-sm">
+                <label>Term Length</label>
+                <select id="q-term">
+                  <option value="10">10 Years</option>
+                  <option value="15">15 Years</option>
+                  <option value="20" selected>20 Years</option>
+                  <option value="25">25 Years</option>
+                  <option value="30">30 Years</option>
+                </select>
+              </div>
+              <div class="form-2col">
+                <div class="form-group-sm">
+                  <label>Health Class</label>
+                  <select id="q-health">
+                    <option value="preferred_plus">Preferred Plus</option>
+                    <option value="preferred" selected>Preferred</option>
+                    <option value="standard_plus">Standard Plus</option>
+                    <option value="standard">Standard</option>
+                  </select>
+                </div>
+                <div class="form-group-sm">
+                  <label>Tobacco Use</label>
+                  <select id="q-tobacco">
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group-sm">
+                <label>Product Type</label>
+                <select id="q-product">
+                  <option value="term">Term Life</option>
+                  <option value="whole">Whole Life</option>
+                  <option value="ul">Universal Life</option>
+                </select>
+              </div>
+              <div style="margin-top:16px;display:flex;gap:10px">
+                <button type="submit" class="btn btn-primary" style="flex:1">Get Quotes →</button>
+                <button type="button" class="btn btn-outline" onclick="clearQuote()">Clear</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Results -->
+          <div>
+            <div class="quote-summary-bar" id="quote-summary-bar"></div>
+            <div class="results-panel">
+              <div class="results-header">
+                <h3>Carrier Rates</h3>
+                <span class="results-badge" id="results-count">Enter details to compare</span>
+              </div>
+              <div id="results-body">
+                <div class="results-empty">
+                  <div class="icon">📊</div>
+                  <p>Fill in the client details and click <strong>Get Quotes</strong> to compare rates from top carriers.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── WEB QUOTE PLUGIN ── -->
+      <div class="portal-tab" id="tab-plugin">
+        <div class="page-header">
+          <h1>Web Quoting Plugin</h1>
+          <p>Embed a branded quote-request widget on any website in minutes. Leads flow directly into your QuoteFlow dashboard.</p>
+        </div>
+        <div class="plugin-grid">
+          <!-- Config -->
+          <div>
+            <div class="plugin-config">
+              <h3>Customize Your Widget</h3>
+              <div class="form-group-sm">
+                <label>Agent Name</label>
+                <input type="text" id="plugin-agent" value="Jane Doe" oninput="updatePlugin()" />
+              </div>
+              <div class="form-group-sm">
+                <label>Widget Title</label>
+                <input type="text" id="plugin-title" value="Get Your Free Life Insurance Quote" oninput="updatePlugin()" />
+              </div>
+              <div class="form-group-sm">
+                <label>Tagline</label>
+                <input type="text" id="plugin-tagline" value="Takes under 2 minutes. No obligation." oninput="updatePlugin()" />
+              </div>
+              <div class="form-group-sm">
+                <label>Header Color</label>
+                <div class="color-row">
+                  <input type="color" id="plugin-color" value="#1a3a5c" oninput="updatePlugin()" />
+                  <input type="text" id="plugin-color-txt" value="#1a3a5c" oninput="syncColorFromText()" maxlength="7" />
+                </div>
+              </div>
+              <div class="form-group-sm">
+                <label>Button Color</label>
+                <div class="color-row">
+                  <input type="color" id="plugin-btn-color" value="#2a7fd4" oninput="updatePlugin()" />
+                  <input type="text" id="plugin-btn-color-txt" value="#2a7fd4" oninput="syncBtnColorFromText()" maxlength="7" />
+                </div>
+              </div>
+              <div class="form-group-sm">
+                <label>Button Text</label>
+                <input type="text" id="plugin-btn-text" value="Get My Free Quote →" oninput="updatePlugin()" />
+              </div>
+              <div class="form-group-sm">
+                <label>Fields to Show</label>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;font-size:.82rem">
+                  <label style="display:flex;align-items:center;gap:4px;font-weight:normal"><input type="checkbox" class="plugin-field" value="name" checked onchange="updatePlugin()" /> Name</label>
+                  <label style="display:flex;align-items:center;gap:4px;font-weight:normal"><input type="checkbox" class="plugin-field" value="phone" checked onchange="updatePlugin()" /> Phone</label>
+                  <label style="display:flex;align-items:center;gap:4px;font-weight:normal"><input type="checkbox" class="plugin-field" value="age" checked onchange="updatePlugin()" /> Age</label>
+                  <label style="display:flex;align-items:center;gap:4px;font-weight:normal"><input type="checkbox" class="plugin-field" value="coverage" checked onchange="updatePlugin()" /> Coverage</label>
+                  <label style="display:flex;align-items:center;gap:4px;font-weight:normal"><input type="checkbox" class="plugin-field" value="tobacco" onchange="updatePlugin()" /> Tobacco</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="plugin-config" style="margin-top:20px">
+              <h3>Embed Code</h3>
+              <div class="embed-tabs">
+                <div class="embed-tab active" onclick="switchEmbed('iframe', this)">iFrame</div>
+                <div class="embed-tab" onclick="switchEmbed('js', this)">JavaScript</div>
+                <div class="embed-tab" onclick="switchEmbed('wp', this)">WordPress</div>
+              </div>
+              <div id="embed-iframe">
+                <div class="code-block" id="embed-code-iframe">
+                  <button class="btn-copy code-copy" onclick="copyCode('embed-code-iframe')">Copy</button>
+                </div>
+              </div>
+              <div id="embed-js" style="display:none">
+                <div class="code-block" id="embed-code-js">
+                  <button class="btn-copy code-copy" onclick="copyCode('embed-code-js')">Copy</button>
+                </div>
+              </div>
+              <div id="embed-wp" style="display:none">
+                <div class="code-block" id="embed-code-wp">
+                  <button class="btn-copy code-copy" onclick="copyCode('embed-code-wp')">Copy</button>
+                </div>
+              </div>
+              <p style="font-size:.75rem;color:#aaa;margin-top:10px">Paste this code into any web page where you want the widget to appear. Leads are sent directly to your QuoteFlow dashboard.</p>
+            </div>
+          </div>
+
+          <!-- Live preview -->
+          <div class="plugin-preview-wrap" style="position:sticky;top:78px">
+            <h3>Live Preview</h3>
+            <div class="preview-frame-wrap">
+              <div class="frame-label">Widget preview — as seen on your website</div>
+              <div style="display:flex;justify-content:center">
+                <div id="widget-preview"></div>
+              </div>
+            </div>
+            <div style="padding:16px 20px;border-top:1px solid #eef2f7;font-size:.82rem;color:#888">
+              <strong style="color:var(--navy)">How it works:</strong> Embed the code snippet on any page. When a visitor submits the form, their info is captured as a new lead in your Leads tab — no extra setup required.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── LEADS ── -->
+      <div class="portal-tab" id="tab-leads">
+        <div class="page-header">
+          <h1>Leads &amp; Clients</h1>
+          <p>All leads captured from your quote forms and embedded widgets.</p>
+        </div>
+        <div class="leads-table-wrap">
+          <div class="leads-toolbar">
+            <input type="text" placeholder="Search leads…" oninput="filterLeads(this.value)" />
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary btn-sm">+ Add Lead</button>
+              <button class="btn btn-outline btn-sm">Export CSV</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="leads-table" id="leads-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Age</th>
+                  <th>Coverage</th>
+                  <th>Source</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="leads-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── POLICIES (placeholder) ── -->
+      <div class="portal-tab" id="tab-policies">
+        <div class="page-header"><h1>Policies</h1><p>Active and pending policies for your clients.</p></div>
+        <div class="quote-panel"><p style="color:#aaa;text-align:center;padding:40px">Policy management coming soon.</p></div>
+      </div>
+
+      <!-- ── SETTINGS (placeholder) ── -->
+      <div class="portal-tab" id="tab-settings">
+        <div class="page-header"><h1>Settings</h1><p>Manage your account and preferences.</p></div>
+        <div class="quote-panel"><p style="color:#aaa;text-align:center;padding:40px">Settings panel coming soon.</p></div>
+      </div>
+
+    </div><!-- /portal-main -->
+  </div><!-- /portal-layout -->
+</div><!-- /page-portal -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════
+const DEMO_USERS = [
+  { email: 'agent@quoteflow.com', password: 'demo1234', name: 'Jane Doe' },
+  { email: 'admin@quoteflow.com', password: 'admin123', name: 'John Admin' },
+];
+
+function doLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('username').value.trim();
+  const pass  = document.getElementById('password').value;
+  const user  = DEMO_USERS.find(u => u.email === email && u.password === pass);
+
+  if (!user) {
+    const err = document.getElementById('login-error');
+    err.style.display = 'block';
+    setTimeout(() => err.style.display = 'none', 4000);
+    return;
+  }
+  sessionStorage.setItem('qf_user', JSON.stringify(user));
+  enterPortal(user);
+}
+
+function enterPortal(user) {
+  document.getElementById('page-login').style.display = 'none';
+  document.getElementById('page-portal').style.display = 'block';
+  document.getElementById('public-nav').style.display = 'none';
+  document.getElementById('portal-nav-user').style.display = 'flex';
+  const initials = user.name.split(' ').map(n => n[0]).join('');
+  document.getElementById('nav-avatar').textContent = initials;
+  document.getElementById('nav-name').textContent = user.name;
+  document.getElementById('dash-name').textContent = user.name.split(' ')[0];
+  initLeads();
+  updatePlugin();
+}
+
+function logout() {
+  sessionStorage.removeItem('qf_user');
+  document.getElementById('page-login').style.display = 'flex';
+  document.getElementById('page-portal').style.display = 'none';
+  document.getElementById('public-nav').style.display = 'flex';
+  document.getElementById('portal-nav-user').style.display = 'none';
+}
+
+// Auto-login if session exists
+(function() {
+  const saved = sessionStorage.getItem('qf_user');
+  if (saved) { try { enterPortal(JSON.parse(saved)); } catch(e) {} }
+})();
+
+// ════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════
+function showTab(name, el) {
+  document.querySelectorAll('.portal-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// ════════════════════════════════════════
+// QUOTING ENGINE
+// ════════════════════════════════════════
+const CARRIERS = [
+  { name: 'Banner Life',       am: 'A+',  base: 1.00 },
+  { name: 'Pacific Life',      am: 'A+',  base: 1.03 },
+  { name: 'Protective Life',   am: 'A+',  base: 1.05 },
+  { name: 'North American',    am: 'A+',  base: 1.08 },
+  { name: 'Mutual of Omaha',   am: 'A+',  base: 1.10 },
+  { name: 'Legal & General',   am: 'A',   base: 1.02 },
+  { name: 'Transamerica',      am: 'A',   base: 1.12 },
+  { name: 'AIG / Corebridge',  am: 'A',   base: 1.15 },
+];
+
+// Base monthly rate per $1,000 of coverage for a 20yr term, male, preferred, non-tobacco
+const AGE_RATES = {
+  18:0.07, 20:0.07, 25:0.08, 30:0.09, 35:0.11, 40:0.16, 45:0.24,
+  50:0.38, 55:0.62, 60:1.02, 65:1.65, 70:2.70, 75:4.20, 80:6.80,
+};
+
+function getBaseRate(age) {
+  const keys = Object.keys(AGE_RATES).map(Number).sort((a,b)=>a-b);
+  let lo = keys[0], hi = keys[keys.length-1];
+  for (let i = 0; i < keys.length - 1; i++) {
+    if (age >= keys[i] && age <= keys[i+1]) { lo = keys[i]; hi = keys[i+1]; break; }
+  }
+  if (lo === hi) return AGE_RATES[lo];
+  const t = (age - lo) / (hi - lo);
+  return AGE_RATES[lo] + t * (AGE_RATES[hi] - AGE_RATES[lo]);
+}
+
+function calcPremium(age, gender, coverage, term, health, tobacco, carrierFactor) {
+  let rate = getBaseRate(age);
+  // Gender
+  if (gender === 'female') rate *= 0.78;
+  // Term multiplier (20yr is baseline 1.0)
+  const termMult = { 10: 0.62, 15: 0.80, 20: 1.00, 25: 1.18, 30: 1.35 };
+  rate *= (termMult[term] || 1.0);
+  // Health class
+  const healthMult = { preferred_plus: 0.88, preferred: 1.00, standard_plus: 1.18, standard: 1.40 };
+  rate *= (healthMult[health] || 1.0);
+  // Tobacco
+  if (tobacco === 'yes') rate *= 2.6;
+  // Carrier spread
+  rate *= carrierFactor;
+  // Add small random jitter per carrier to simulate differentiation
+  return rate * (coverage / 1000);
+}
+
+function runQuote(e) {
+  e.preventDefault();
+  const first    = document.getElementById('q-first').value;
+  const last     = document.getElementById('q-last').value;
+  const age      = parseInt(document.getElementById('q-age').value);
+  const gender   = document.getElementById('q-gender').value;
+  const coverage = parseInt(document.getElementById('q-coverage').value);
+  const term     = parseInt(document.getElementById('q-term').value);
+  const health   = document.getElementById('q-health').value;
+  const tobacco  = document.getElementById('q-tobacco').value;
+  const product  = document.getElementById('q-product').value;
+
+  if (isNaN(age) || age < 18 || age > 80) { showToast('Age must be between 18–80'); return; }
+  if (isNaN(coverage) || coverage < 50000) { showToast('Coverage must be at least $50,000'); return; }
+
+  // Whole/UL multipliers
+  const productMult = { term: 1.0, whole: 6.5, ul: 4.2 };
+  const pMult = productMult[product] || 1.0;
+
+  const results = CARRIERS.map((c, i) => {
+    // Add small deterministic jitter so each carrier is stable per session
+    const jitter = 1 + ((i * 7 + age * 3) % 13) * 0.005;
+    const monthly = calcPremium(age, gender, coverage, term, health, tobacco, c.base * jitter * pMult);
+    return { ...c, monthly: Math.round(monthly * 100) / 100 };
+  }).sort((a, b) => a.monthly - b.monthly);
+
+  const summaryBar = document.getElementById('quote-summary-bar');
+  const productLabel = { term: 'Term Life', whole: 'Whole Life', ul: 'Universal Life' }[product];
+  summaryBar.innerHTML = `
+    <span>Client: <strong>${first} ${last}</strong></span>
+    <span>Age: <strong>${age}</strong></span>
+    <span>Coverage: <strong>$${coverage.toLocaleString()}</strong></span>
+    <span>Product: <strong>${productLabel} – ${product === 'term' ? term + 'yr' : 'Permanent'}</strong></span>
+    <span>Health: <strong>${health.replace('_', ' ')}</strong></span>
+    ${tobacco === 'yes' ? '<span style="color:#f5a623">⚠ Tobacco user</span>' : ''}
+  `;
+  summaryBar.style.display = 'block';
+
+  document.getElementById('results-count').textContent = `${results.length} carriers compared`;
+
+  const rows = results.map((r, i) => {
+    const isBest = i === 0;
+    const isPopular = i === 1;
+    return `
+      <tr class="${isBest ? 'carrier-row-best' : ''}">
+        <td>
+          <div class="carrier-name">${r.name} <span class="carrier-am">${r.am}</span></div>
+          <div class="carrier-rating">A.M. Best Rating</div>
+        </td>
+        <td>
+          ${isBest ? '<span class="badge-best">Best Rate</span>' : ''}
+          ${isPopular ? '<span class="badge-popular">Popular</span>' : ''}
+        </td>
+        <td>
+          <div class="price-monthly">$${r.monthly.toFixed(2)}<span style="font-size:.75rem;font-weight:400;color:#888">/mo</span></div>
+          <div class="price-annual">$${(r.monthly * 12).toFixed(2)}/yr</div>
+        </td>
+        <td>
+          <button class="btn btn-green btn-sm" onclick="selectCarrier('${r.name}', ${r.monthly.toFixed(2)})">Select</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  document.getElementById('results-body').innerHTML = `
+    <table class="carrier-table">
+      <thead><tr><th>Carrier</th><th></th><th>Monthly Premium</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function selectCarrier(name, rate) {
+  showToast(`✓ ${name} selected at $${rate}/mo — opening application…`);
+}
+
+function clearQuote() {
+  document.getElementById('quote-form').reset();
+  document.getElementById('results-body').innerHTML = `
+    <div class="results-empty">
+      <div class="icon">📊</div>
+      <p>Fill in the client details and click <strong>Get Quotes</strong> to compare rates from top carriers.</p>
+    </div>`;
+  document.getElementById('results-count').textContent = 'Enter details to compare';
+  document.getElementById('quote-summary-bar').style.display = 'none';
+}
+
+// ════════════════════════════════════════
+// WEB QUOTING PLUGIN
+// ════════════════════════════════════════
+let currentEmbedType = 'iframe';
+
+function updatePlugin() {
+  const title    = document.getElementById('plugin-title').value;
+  const tagline  = document.getElementById('plugin-tagline').value;
+  const agent    = document.getElementById('plugin-agent').value;
+  const color    = document.getElementById('plugin-color').value;
+  const btnColor = document.getElementById('plugin-btn-color').value;
+  const btnText  = document.getElementById('plugin-btn-text').value;
+  document.getElementById('plugin-color-txt').value = color;
+  document.getElementById('plugin-btn-color-txt').value = btnColor;
+
+  const fields = [...document.querySelectorAll('.plugin-field:checked')].map(f => f.value);
+
+  // Build widget HTML
+  let fieldHTML = `<div class="qf-field"><label>Email Address *</label><input type="email" placeholder="you@example.com" /></div>`;
+  if (fields.includes('name'))     fieldHTML = `<div class="qf-row"><div class="qf-field"><label>First Name</label><input type="text" placeholder="Jane" /></div><div class="qf-field"><label>Last Name</label><input type="text" placeholder="Smith" /></div></div>` + fieldHTML;
+  if (fields.includes('phone'))    fieldHTML += `<div class="qf-field"><label>Phone Number</label><input type="tel" placeholder="(555) 000-0000" /></div>`;
+  if (fields.includes('age') && fields.includes('coverage')) {
+    fieldHTML += `<div class="qf-row"><div class="qf-field"><label>Age</label><input type="number" placeholder="35" /></div><div class="qf-field"><label>Coverage Amount ($)</label><input type="number" placeholder="500000" /></div></div>`;
+  } else {
+    if (fields.includes('age'))      fieldHTML += `<div class="qf-field"><label>Age</label><input type="number" placeholder="35" /></div>`;
+    if (fields.includes('coverage')) fieldHTML += `<div class="qf-field"><label>Coverage Amount ($)</label><input type="number" placeholder="500000" /></div>`;
+  }
+  if (fields.includes('tobacco')) fieldHTML += `<div class="qf-field"><label>Tobacco User?</label><select><option>No</option><option>Yes</option></select></div>`;
+
+  document.getElementById('widget-preview').innerHTML = `
+    <div class="qf-widget">
+      <div class="qf-widget-header" style="background:${color}">
+        <h4>${escapeHtml(title)}</h4>
+        <p>${escapeHtml(tagline)}</p>
+      </div>
+      <div class="qf-widget-body">
+        ${fieldHTML}
+        <button class="qf-btn" style="background:${btnColor}">${escapeHtml(btnText)}</button>
+      </div>
+      <div class="qf-footer">Powered by QuoteFlow · Agent: ${escapeHtml(agent)}</div>
+    </div>
+  `;
+
+  // Generate embed codes
+  const agentId = btoa(agent).replace(/=/g,'');
+  const params = `?agent=${agentId}&color=${encodeURIComponent(color)}&btn=${encodeURIComponent(btnColor)}&fields=${fields.join(',')}`;
+  const widgetUrl = `https://quoteflow.com/widget${params}`;
+
+  document.getElementById('embed-code-iframe').childNodes[0] && null;
+  setCodeText('embed-code-iframe', `<iframe
+  src="${widgetUrl}"
+  width="440"
+  height="520"
+  frameborder="0"
+  scrolling="no"
+  title="Insurance Quote Widget"
+  style="border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.12)">
+</iframe>`);
+
+  setCodeText('embed-code-js', `<!-- QuoteFlow Widget -->
+<div id="qf-widget-container"></div>
+<script>
+  (function(w,d,s,u){
+    var j=d.createElement(s);
+    j.src='https://quoteflow.com/embed.js';
+    j.dataset.agent='${agentId}';
+    j.dataset.color='${color}';
+    j.dataset.btnColor='${btnColor}';
+    j.dataset.fields='${fields.join(',')}';
+    j.dataset.target='qf-widget-container';
+    d.head.appendChild(j);
+  })(window,document,'script');
+<\/script>`);
+
+  setCodeText('embed-code-wp', `[quoteflow_widget
+  agent="${agentId}"
+  header_color="${color}"
+  button_color="${btnColor}"
+  fields="${fields.join(',')}"
+  title="${title}"
+]`);
+}
+
+function setCodeText(id, text) {
+  const el = document.getElementById(id);
+  const btn = el.querySelector('.code-copy');
+  el.textContent = text;
+  el.appendChild(btn);
+}
+
+function switchEmbed(type, el) {
+  currentEmbedType = type;
+  document.querySelectorAll('.embed-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('embed-iframe').style.display = type === 'iframe' ? 'block' : 'none';
+  document.getElementById('embed-js').style.display    = type === 'js'     ? 'block' : 'none';
+  document.getElementById('embed-wp').style.display    = type === 'wp'     ? 'block' : 'none';
+}
+
+function syncColorFromText() {
+  const v = document.getElementById('plugin-color-txt').value;
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) { document.getElementById('plugin-color').value = v; updatePlugin(); }
+}
+function syncBtnColorFromText() {
+  const v = document.getElementById('plugin-btn-color-txt').value;
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) { document.getElementById('plugin-btn-color').value = v; updatePlugin(); }
+}
+
+function copyCode(id) {
+  const el = document.getElementById(id);
+  const text = el.textContent.replace(/^Copy/, '').trim();
+  navigator.clipboard.writeText(text).then(() => showToast('✓ Code copied to clipboard!'));
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ════════════════════════════════════════
+// LEADS TABLE
+// ════════════════════════════════════════
+const SAMPLE_LEADS = [
+  { name:'Mark Thompson',  email:'mark.t@email.com',   phone:'(555) 210-3940', age:42, coverage:'$500,000', source:'Web Widget',   status:'quoted',    date:'Jun 2, 2026' },
+  { name:'Sarah Lin',      email:'sarah.l@email.com',  phone:'(555) 391-0022', age:34, coverage:'$300,000', source:'Quote Engine', status:'contacted', date:'Jun 1, 2026' },
+  { name:'David Rivera',   email:'david.r@email.com',  phone:'(555) 804-1123', age:51, coverage:'$750,000', source:'Web Widget',   status:'new',       date:'Jun 1, 2026' },
+  { name:'Lisa Monroe',    email:'lisa.m@email.com',   phone:'(555) 577-9921', age:38, coverage:'$400,000', source:'Quote Engine', status:'closed',    date:'May 30, 2026'},
+  { name:'James Park',     email:'james.p@email.com',  phone:'(555) 119-4482', age:29, coverage:'$250,000', source:'Web Widget',   status:'new',       date:'May 29, 2026'},
+  { name:'Angela Torres',  email:'angela.t@email.com', phone:'(555) 663-7751', age:46, coverage:'$600,000', source:'Quote Engine', status:'quoted',    date:'May 28, 2026'},
+];
+
+let leadsData = [...SAMPLE_LEADS];
+
+function initLeads() { renderLeads(leadsData); }
+
+function renderLeads(data) {
+  const statusClass = { new:'status-new', contacted:'status-contacted', quoted:'status-quoted', closed:'status-closed' };
+  document.getElementById('leads-tbody').innerHTML = data.map(l => `
+    <tr>
+      <td><strong>${l.name}</strong></td>
+      <td>${l.email}</td>
+      <td>${l.phone}</td>
+      <td>${l.age}</td>
+      <td>${l.coverage}</td>
+      <td>${l.source}</td>
+      <td><span class="status-pill ${statusClass[l.status]}">${l.status.charAt(0).toUpperCase()+l.status.slice(1)}</span></td>
+      <td>${l.date}</td>
+      <td><button class="btn btn-blue btn-sm" onclick="showToast('Opening ${l.name.split(' ')[0]}…')">View</button></td>
+    </tr>
+  `).join('');
+}
+
+function filterLeads(query) {
+  const q = query.toLowerCase();
+  renderLeads(leadsData.filter(l =>
+    l.name.toLowerCase().includes(q) ||
+    l.email.toLowerCase().includes(q) ||
+    l.status.toLowerCase().includes(q) ||
+    l.source.toLowerCase().includes(q)
+  ));
+}
+
+// ════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+
+</body>
+</html>

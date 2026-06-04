@@ -13,23 +13,75 @@ const initialState = {
   message: '',
 };
 
+function validate(form) {
+  const errors = {};
+  if (!form.firstName.trim()) errors.firstName = 'First name is required.';
+  if (!form.lastName.trim()) errors.lastName = 'Last name is required.';
+  if (!form.email.trim()) {
+    errors.email = 'Email address is required.';
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    errors.email = 'Please enter a valid email address.';
+  }
+  if (!form.phone.trim()) {
+    errors.phone = 'Phone number is required.';
+  } else if (!/^\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/.test(form.phone.replace(/\s/g, ''))) {
+    errors.phone = 'Please enter a valid 10-digit phone number.';
+  }
+  if (!form.age) {
+    errors.age = 'Age is required.';
+  } else if (Number(form.age) < 18 || Number(form.age) > 80) {
+    errors.age = 'Age must be between 18 and 80.';
+  }
+  if (!form.loanAmount) {
+    errors.loanAmount = 'Loan amount is required.';
+  } else if (Number(form.loanAmount) < 50000) {
+    errors.loanAmount = 'Minimum loan amount is $50,000.';
+  }
+  if (!form.coverageAmount) {
+    errors.coverageAmount = 'Coverage amount is required.';
+  } else if (Number(form.coverageAmount) < 50000) {
+    errors.coverageAmount = 'Minimum coverage amount is $50,000.';
+  }
+  return errors;
+}
+
 export default function QuoteForm() {
   const [form, setForm] = useState(initialState);
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
   const [errorMsg, setErrorMsg] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   function handleChange(e) {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+    if (touched[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: validate({ ...form, [name]: value })[name] }));
+    }
+  }
+
+  function handleBlur(e) {
+    const { name } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    setFieldErrors((prev) => ({ ...prev, [name]: validate(form)[name] }));
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
+    const errors = validate(form);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setTouched(Object.fromEntries(Object.keys(initialState).map((k) => [k, true])));
+      return;
+    }
     setStatus('loading');
     setErrorMsg('');
     try {
       await axios.post('/api/leads', form);
       setStatus('success');
       setForm(initialState);
+      setFieldErrors({});
+      setTouched({});
     } catch (err) {
       setStatus('error');
       setErrorMsg(err?.response?.data?.error || 'Something went wrong. Please try again.');
@@ -57,11 +109,11 @@ export default function QuoteForm() {
         ) : (
           <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 md:p-10 shadow-2xl">
             <div className="grid md:grid-cols-2 gap-6">
-              <Field label="First Name *" name="firstName" value={form.firstName} onChange={handleChange} placeholder="Jane" required />
-              <Field label="Last Name *" name="lastName" value={form.lastName} onChange={handleChange} placeholder="Smith" required />
-              <Field label="Email Address *" name="email" type="email" value={form.email} onChange={handleChange} placeholder="jane@email.com" required />
-              <Field label="Phone Number *" name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="(555) 000-0000" required />
-              <Field label="Your Age *" name="age" type="number" value={form.age} onChange={handleChange} placeholder="35" min="18" max="80" required />
+              <Field label="First Name *" name="firstName" value={form.firstName} onChange={handleChange} onBlur={handleBlur} placeholder="Jane" error={fieldErrors.firstName} />
+              <Field label="Last Name *" name="lastName" value={form.lastName} onChange={handleChange} onBlur={handleBlur} placeholder="Smith" error={fieldErrors.lastName} />
+              <Field label="Email Address *" name="email" type="email" value={form.email} onChange={handleChange} onBlur={handleBlur} placeholder="jane@email.com" error={fieldErrors.email} />
+              <Field label="Phone Number *" name="phone" type="tel" value={form.phone} onChange={handleChange} onBlur={handleBlur} placeholder="(555) 000-0000" error={fieldErrors.phone} />
+              <Field label="Your Age *" name="age" type="number" value={form.age} onChange={handleChange} onBlur={handleBlur} placeholder="35" min="18" max="80" error={fieldErrors.age} />
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tobacco User?</label>
                 <select
@@ -74,8 +126,8 @@ export default function QuoteForm() {
                   <option value="yes">Yes</option>
                 </select>
               </div>
-              <Field label="Mortgage Loan Amount *" name="loanAmount" type="number" value={form.loanAmount} onChange={handleChange} placeholder="350000" min="50000" required prefix="$" />
-              <Field label="Desired Coverage Amount *" name="coverageAmount" type="number" value={form.coverageAmount} onChange={handleChange} placeholder="350000" min="50000" required prefix="$" />
+              <Field label="Mortgage Loan Amount *" name="loanAmount" type="number" value={form.loanAmount} onChange={handleChange} onBlur={handleBlur} placeholder="350000" min="50000" prefix="$" error={fieldErrors.loanAmount} />
+              <Field label="Desired Coverage Amount *" name="coverageAmount" type="number" value={form.coverageAmount} onChange={handleChange} onBlur={handleBlur} placeholder="350000" min="50000" prefix="$" error={fieldErrors.coverageAmount} />
             </div>
 
             <div className="mt-6">
@@ -115,7 +167,7 @@ export default function QuoteForm() {
   );
 }
 
-function Field({ label, name, type = 'text', value, onChange, placeholder, required, min, max, prefix }) {
+function Field({ label, name, type = 'text', value, onChange, onBlur, placeholder, min, max, prefix, error }) {
   return (
     <div>
       <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
@@ -128,13 +180,18 @@ function Field({ label, name, type = 'text', value, onChange, placeholder, requi
           name={name}
           value={value}
           onChange={onChange}
+          onBlur={onBlur}
           placeholder={placeholder}
-          required={required}
           min={min}
           max={max}
-          className={`w-full border border-gray-300 rounded-lg py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 ${prefix ? 'pl-8 pr-4' : 'px-4'}`}
+          className={`w-full border rounded-lg py-3 text-gray-900 focus:outline-none focus:ring-2 ${
+            error
+              ? 'border-red-400 focus:ring-red-400'
+              : 'border-gray-300 focus:ring-blue-500'
+          } ${prefix ? 'pl-8 pr-4' : 'px-4'}`}
         />
       </div>
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );
 }

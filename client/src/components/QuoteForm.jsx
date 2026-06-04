@@ -103,7 +103,8 @@ export default function QuoteForm() {
         loanAmount: form.loanAmount.replace(/,/g, ''),
         coverageAmount: form.coverageAmount.replace(/,/g, ''),
       };
-      await axios.post('/api/leads', payload);
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      await axios.post(`${apiBase}/api/leads`, payload);
       setStatus('success');
       setForm(initialState);
       setFieldErrors({});
